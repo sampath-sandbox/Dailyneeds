@@ -8,14 +8,12 @@ import {
   ScrollView,
   ImageBackground,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { DrawerParamList } from '../../App';
-import { useSession } from '../context/SessionContext';
-import apiService from '../services/ApiService';
+import { useSession } from '../context/MockSessionContext';
 
 type UpdateRequestScreenNavigationProp = DrawerNavigationProp<DrawerParamList, 'UpdateRequest'>;
 
@@ -25,7 +23,6 @@ interface Props {
 
 const UpdateRequestScreen: React.FC<Props> = ({ navigation }) => {
   const { selectedItem, userMobile } = useSession();
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [updateForm, setUpdateForm] = useState({
     brand: selectedItem?.brand || '',
     itemCount: '30',
@@ -34,42 +31,22 @@ const UpdateRequestScreen: React.FC<Props> = ({ navigation }) => {
     specialInstructions: '',
   });
 
-  const handleSubmitRequest = async () => {
+  const handleSubmitRequest = () => {
     if (!updateForm.brand || !updateForm.itemCount) {
       Alert.alert('Error', 'Please fill all required fields');
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      const requestData = {
-        itemId: selectedItem?.id,
-        customerMobile: userMobile,
-        brand: updateForm.brand,
-        itemCount: parseInt(updateForm.itemCount),
-        address: updateForm.address,
-        alternateAddress: updateForm.alternateAddress,
-        specialInstructions: updateForm.specialInstructions,
-      };
-
-      await apiService.submitUpdateRequest(requestData);
-      
-      Alert.alert(
-        'Update Request Sent',
-        `Your update request has been sent to the agent.\n\nItem: ${selectedItem?.name}\nBrand: ${updateForm.brand}\nCount: ${updateForm.itemCount}\n\nNotification sent via WhatsApp and Email.`,
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.navigate('CustomerDetails')
-          }
-        ]
-      );
-    } catch (error) {
-      console.error('Error submitting update request:', error);
-      Alert.alert('Error', 'Failed to submit update request. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    Alert.alert(
+      'Update Request Sent',
+      `Your update request has been sent to the agent.\n\nItem: ${selectedItem?.name}\nBrand: ${updateForm.brand}\nCount: ${updateForm.itemCount}\n\nNotification sent via WhatsApp and Email.`,
+      [
+        {
+          text: 'OK',
+          onPress: () => navigation.navigate('CustomerDetails')
+        }
+      ]
+    );
   };
 
   return (
@@ -180,17 +157,9 @@ const UpdateRequestScreen: React.FC<Props> = ({ navigation }) => {
           </BlurView>
 
           <BlurView intensity={15} style={styles.submitCard}>
-            <TouchableOpacity 
-              style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]} 
-              onPress={handleSubmitRequest}
-              disabled={isSubmitting}
-            >
+            <TouchableOpacity style={styles.submitButton} onPress={handleSubmitRequest}>
               <LinearGradient colors={['#F39C12', '#E67E22']} style={styles.submitGradient}>
-                {isSubmitting ? (
-                  <ActivityIndicator color="white" size="small" />
-                ) : (
-                  <Text style={styles.submitText}>📝 Submit Update Request</Text>
-                )}
+                <Text style={styles.submitText}>📝 Submit Update Request</Text>
               </LinearGradient>
             </TouchableOpacity>
           </BlurView>
@@ -324,9 +293,6 @@ const styles = StyleSheet.create({
   submitButton: {
     borderRadius: 12,
     overflow: 'hidden',
-  },
-  submitButtonDisabled: {
-    opacity: 0.7,
   },
   submitGradient: {
     paddingVertical: 16,

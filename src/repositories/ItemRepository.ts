@@ -3,10 +3,14 @@ import ItemsApiService from '../services/ItemsApiService';
 
 class ItemRepository {
   async getItems(): Promise<Item[]> {
-    return await ItemsApiService.getItems();
+    console.log('ItemRepository.getItems() called');
+    const result = await ItemsApiService.getItems();
+    console.log('ItemRepository.getItems() result:', result);
+    return result;
   }
 
   async getSuggestions(): Promise<Suggestion[]> {
+    debugger;
     return await ItemsApiService.getSuggestions();
   }
 

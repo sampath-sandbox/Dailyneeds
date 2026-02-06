@@ -28,18 +28,20 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
   const { items, suggestions, loading, error, refreshData } = useHomeViewModel();
 
   const handleItemSelect = (item: Item) => {
-    setSelectedItem(item);
-    if (userType === 'customer') {
-      navigation.navigate('CustomerDetails');
+ debugger;
+    setSelectedItem({ ...item, description: item.description || '', imageUrl: item.imageUrl });
+    
+    if (userType === 1) {
+      navigation.navigate('CustomerDetails', { selectedItem: item });
     } else {
-      navigation.navigate('AgentDetails');
+      navigation.navigate('AgentDetails', { selectedItem: item });
     }
   };
 
   const renderItem = ({ item }: { item: Item }) => (
     <TouchableOpacity style={styles.itemTile} onPress={() => handleItemSelect(item)}>
       <BlurView intensity={15} style={styles.tileContent}>
-        <Text style={styles.itemIcon}>{item.icon}</Text>
+        <Text style={styles.itemIcon}>{item.imageUrl}</Text>
         <Text style={styles.itemName}>{item.name}</Text>
         <Text style={styles.itemPrice}>₹{item.price}</Text>
         <Text style={styles.itemUnit}>{item.unit}</Text>
@@ -92,33 +94,32 @@ const HomeScreen: React.FC<Props> = ({ navigation }) => {
 
           {!loading && !error && (
             <>
+              {suggestions && suggestions?.result?.length > 0 && (
+                <BlurView intensity={15} style={styles.suggestionsSection}>
+                  <Text style={styles.sectionTitle}>🎯 Suggestions</Text>
+                  <FlatList
+                    data={suggestions?.result || []}
+                    renderItem={renderSuggestion}
+                    keyExtractor={(item) => item.id}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                  />
+                </BlurView>
+              )}
 
-          {!loading && !error && suggestions.length > 0 && (
-            <BlurView intensity={15} style={styles.suggestionsSection}>
-              <Text style={styles.sectionTitle}>🎯 Suggestions</Text>
-              <FlatList
-                data={suggestions}
-                renderItem={renderSuggestion}
-                keyExtractor={(item) => item.id}
-                horizontal
-                showsHorizontalScrollIndicator={false}
-              />
-            </BlurView>
-          )}
-
-          {!loading && !error && items.length > 0 && (
-            <View style={styles.itemsSection}>
-              <Text style={styles.sectionTitle}>📦 Available Items</Text>
-              <FlatList
-                data={items}
-                renderItem={renderItem}
-                keyExtractor={(item) => item.id}
-                numColumns={2}
-                columnWrapperStyle={styles.row}
-                scrollEnabled={false}
-              />
-            </View>
-          )}
+              {items && items?.result?.length > 0 && (
+                <View style={styles.itemsSection}>
+                  <Text style={styles.sectionTitle}>📦 Available Items</Text>
+                  <FlatList
+                    data={items?.result || []}
+                    renderItem={renderItem}
+                    keyExtractor={(item) => item.id}
+                    numColumns={2}
+                    columnWrapperStyle={styles.row}
+                    scrollEnabled={false}
+                  />
+                </View>
+              )}
             </>
           )}
         </ScrollView>

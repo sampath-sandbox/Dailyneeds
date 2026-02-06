@@ -6,14 +6,15 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { TouchableOpacity, Text, View, Platform } from 'react-native';
 
+// import LoginScreen from './src/screens/LoginScreen';
 import LoginScreen from './src/screens/LoginScreen';
 import HomeScreen from './src/screens/HomeScreen';
 import CustomerDetailsScreen from './src/screens/CustomerDetailsScreen';
-import AgentDetailsScreen from './src/screens/AgentDetailsScreen';
-import SettingsScreen from './src/screens/SettingsScreen';
+import AgentDetailsScreen from './src/screens/MockAgentDetailsScreen';
+import SettingsScreen from './src/screens/MockSettingsScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
-import VacationRequestScreen from './src/screens/VacationRequestScreen';
-import UpdateRequestScreen from './src/screens/UpdateRequestScreen';
+import VacationRequestScreen from './src/screens/MockVacationRequestScreen';
+import UpdateRequestScreen from './src/screens/MockUpdateRequestScreen';
 import AgentHistoryScreen from './src/screens/AgentHistoryScreen';
 import AgentDashboardScreen from './src/screens/AgentDashboardScreen';
 import PendingPaymentsScreen from './src/screens/PendingPaymentsScreen';
@@ -35,8 +36,8 @@ export type RootStackParamList = {
 export type DrawerParamList = {
   Login: undefined;
   Home: undefined;
-  CustomerDetails: undefined;
-  AgentDetails: undefined;
+  CustomerDetails: { selectedItem?: any };
+  AgentDetails: { selectedItem?: any };
   Settings: undefined;
   History: undefined;
   VacationRequest: undefined;
@@ -56,28 +57,8 @@ export default function App() {
       };
     }
   }, []);
-  const Stack = createStackNavigator<RootStackParamList>();
-  const Drawer = createDrawerNavigator<DrawerParamList>();
 
-  function DrawerNavigator() {
-    return (
-      <Drawer.Navigator
-        drawerContent={(props) => <CustomDrawerContent {...props} />}
-        screenOptions={{
-          headerShown: false,
-          drawerStyle: {
-            width: 280,
-            backgroundColor: 'rgba(46, 204, 113, 0.9)',
-          },
-        }}
-      >
-        <Drawer.Screen name="Home" component={HomeScreen} />
-        <Drawer.Screen name="Customer" component={CustomerScreen} />
-        <Drawer.Screen name="Agent" component={AgentScreen} />
-        <Drawer.Screen name="Settings" component={SettingsScreen} />
-      </Drawer.Navigator>
-    );
-  }
+  const Drawer = createDrawerNavigator<DrawerParamList>();
 
   function AppNavigator() {
     return (

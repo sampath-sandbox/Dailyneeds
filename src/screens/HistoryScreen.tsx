@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,9 @@ import { BlurView } from 'expo-blur';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { DrawerParamList } from '../../App';
 import { useSession } from '../context/SessionContext';
+import { Item, ResponseData } from '../models';
+import SimpleApiService from '../services/SimpleApiService';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type HistoryScreenNavigationProp = DrawerNavigationProp<DrawerParamList, 'History'>;
 
@@ -22,68 +25,110 @@ interface Props {
 }
 
 interface DayHistory {
-  date: number;
-  status: 'delivered' | 'missed' | 'pending';
-  price: number;
-  chat?: string[];
-  disabled: boolean;
+  // date: number;
+  // status: 'delivered' | 'missed' | 'pending';
+  // price: number;
+  // chat?: string[];
+  // disabled: boolean;
+
+  historyId: number;
+  userId: number;
+  itemId: number;
+  monthId: number;
+  yearId: number;
+  dates: HistoryDateDetail[]
+  summary: HistorySummary;
+  comments: HistoryComment[];
+  disabled: boolean | false;
+  isActive: boolean | true;
+  isDeleted: boolean | false;
+  createdBy: number;
+  createdDate: string | null;
+  updatedBy: number | null;
+  updatedDate: string | null;
+
 }
+
+
+interface HistoryDateDetail {
+  date: string
+  status: string   // Delivered | Pending | Vacation
+  quantity: number
+  totalPrice: number
+}
+interface HistorySummary {
+  totalDelivered: number;
+  totalPending: number;
+  totalVacation: number;
+  monthlyTotalAmount: number;
+}
+interface HistoryComment {
+  commentId: number;
+  fromUserId: number;
+  fromRole: string;  // Customer | Agent
+  message: string;
+  createdAt: string;
+}
+
 
 const HistoryScreen: React.FC<Props> = ({ navigation }) => {
   const { selectedItem } = useSession();
-  const currentDate = new Date().getDate();
   const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
-  const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+  const [customerHistory, setCustomerHistory] = useState<ResponseData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const [monthHistory] = useState<DayHistory[]>(
-    Array.from({ length: daysInMonth }, (_, i) => ({
-      date: i + 1,
-      status: i + 1 < currentDate ? (Math.random() > 0.2 ? 'delivered' : 'missed') : 'pending',
-      price: selectedItem?.price || 25,
-      chat: i + 1 === 10 ? ['Customer: Late delivery', 'Agent: Sorry, traffic issue'] : undefined,
-      disabled: i + 1 < currentDate,
-    }))
-  );
+  useEffect(() => {
+    const fetchHistory = async () => {
+      if (!selectedItem) return;
+      setLoading(true);
+      try {
+        const userJson = await AsyncStorage.getItem('user');
+        const user = userJson ? JSON.parse(userJson) : null;
+        if (user) {
+          const data = await SimpleApiService.getCustomerHistory(Number(selectedItem.id), user.id);
+          setCustomerHistory(data.result);
+        }
+      } catch (err) {
+        setError('Failed to load history. Please try again.');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHistory();
+  }, [selectedItem]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'delivered': return '#667eea';
-      case 'missed': return '#E74C3C';
-      case 'pending': return '#F39C12';
+      case 'Delivered': return '#667eea';
+      case 'Missed': return '#E74C3C';
+      case 'Vacation': return '#e35bc1';
+      case 'Pending': return '#F39C12';
       default: return '#95A5A6';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'delivered': return '✅';
-      case 'missed': return '❌';
-      case 'pending': return '⏳';
+      case 'Delivered': return '✅';
+      case 'Missed': return '❌';
+      case 'Vacation': return '🏖️';
+      case 'Pending': return '⏳';
       default: return '❓';
     }
   };
 
-  const showChat = (day: DayHistory) => {
-    if (day.chat && day.chat.length > 0) {
-      Alert.alert(
-        `Chat History - Day ${day.date}`,
-        day.chat.join('\n'),
-        [{ text: 'OK' }]
-      );
-    } else {
-      Alert.alert('No Chat', 'No chat history available for this date');
-    }
-  };
-
-  const renderDay = ({ item }: { item: DayHistory }) => (
-    <BlurView intensity={15} style={[
-      styles.dayCard,
-      item.disabled && styles.disabledCard
-    ]}>
+  const renderDay = ({ item }: { item: HistoryDateDetail }) => (
+    <BlurView intensity={15} style={styles.dayCard}>
       <View style={styles.dayHeader}>
-        <Text style={[styles.dayNumber, item.disabled && styles.disabledText]}>
-          {item.date}
-        </Text>
+        <Text style={styles.historyDate}>
+  {new Date(item.date).toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  })}
+</Text>
         <View style={styles.statusContainer}>
           <Text style={styles.statusIcon}>{getStatusIcon(item.status)}</Text>
           <View style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}>
@@ -91,24 +136,10 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
           </View>
         </View>
       </View>
-      
       <View style={styles.dayDetails}>
-        <Text style={[styles.itemText, item.disabled && styles.disabledText]}>
-          {selectedItem?.name}
-        </Text>
-        <Text style={[styles.priceText, item.disabled && styles.disabledText]}>
-          ₹{item.price}
-        </Text>
+        <Text style={styles.itemText}>Quantity: {item.quantity}</Text>
+        <Text style={styles.priceText}>₹{item.totalPrice}</Text>
       </View>
-      
-      <TouchableOpacity
-        style={styles.chatButton}
-        onPress={() => showChat(item)}
-      >
-        <Text style={styles.chatButtonText}>
-          💬 Chat {item.chat ? `(${item.chat.length})` : '(0)'}
-        </Text>
-      </TouchableOpacity>
     </BlurView>
   );
 
@@ -123,21 +154,48 @@ const HistoryScreen: React.FC<Props> = ({ navigation }) => {
       >
         <View style={styles.container}>
           <BlurView intensity={20} style={styles.header}>
-            <TouchableOpacity 
-              style={styles.backButton} 
+            <TouchableOpacity
+              style={styles.backButton}
               onPress={() => navigation.navigate('CustomerDetails')}
             >
               <Text style={styles.backButtonText}>← Back</Text>
             </TouchableOpacity>
             <Text style={styles.title}>History</Text>
             <Text style={styles.subtitle}>{currentMonth}</Text>
-            {selectedItem && <Text style={styles.itemName}>{selectedItem.name}</Text>}
+            {customerHistory?.summary && (
+
+              <BlurView intensity={15} style={styles.detailsCard}>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Total Delivered:</Text>
+                  <Text style={styles.detailValue}>{customerHistory.summary.totalDelivered || 'Loading...'}</Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Total Pending:</Text>
+                  <Text style={styles.detailValue}>{customerHistory.summary.totalPending || 'Loading...'}</Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Total Vacation:</Text>
+                  <Text style={styles.detailValue}>{customerHistory.summary.totalVacation || 'Loading...'}</Text>
+                </View>
+
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Monthly Total:</Text>
+                  <Text style={styles.detailValue}>₹{customerHistory.summary.monthlyTotalAmount || 'Loading...'}</Text>
+                </View>
+
+              </BlurView>
+
+
+
+            )}
           </BlurView>
 
           <FlatList
-            data={monthHistory}
+            data={customerHistory?.dates}
             renderItem={renderDay}
-            keyExtractor={(item) => item.date.toString()}
+            keyExtractor={(item) => item.date}
             numColumns={2}
             columnWrapperStyle={styles.row}
             style={styles.historyList}
@@ -279,6 +337,54 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: 'white',
     fontWeight: '600',
+  },
+  summaryContainer: {
+    marginTop: 16,
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  summaryText: {
+    fontSize: 14,
+    color: 'white',
+    fontWeight: 'bold',
+    marginBottom: 4,
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  detailLabel: {
+    fontSize: 14,
+    color: 'white',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  detailValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: 'white',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+  detailsCard: {
+    padding: 20,
+    borderRadius: 16,
+    marginBottom: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  detailRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  historyDate: {
+    fontSize: 14,
+    color: 'white',
+    textShadowColor: 'rgba(0, 0, 0, 0.3)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
 });
 

@@ -8,14 +8,13 @@ import {
   ImageBackground,
   FlatList,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { DrawerParamList } from '../../App';
-import { useSession } from '../context/SessionContext';
-import apiService from '../services/ApiService';
+import { useSession } from '../context/MockSessionContext';
+import { mockData } from '../data/mockData';
 
 type AgentDetailsNavigationProp = DrawerNavigationProp<DrawerParamList, 'AgentDetails'>;
 
@@ -42,52 +41,34 @@ const AgentDetailsScreen: React.FC<Props> = ({ navigation }) => {
   const [selectedFlat, setSelectedFlat] = useState('All');
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (selectedItem) {
-      loadCustomers();
-    }
-  }, [selectedItem]);
-
-  const loadCustomers = async () => {
-    if (!selectedItem) return;
-    
-    setLoading(true);
-    try {
-      const data = await apiService.getAgentCustomers(selectedItem.id);
-      setCustomers(data);
-    } catch (error) {
-      console.error('Error loading customers:', error);
-      // Fallback to mock data
-      setCustomers([
-        {
-          id: '1',
-          name: 'Ravi Kumar',
-          mobile: '9876543210',
-          apartment: 'Merlion Apartments',
-          tower: 'A',
-          flat: '101',
-          delivered: 28,
-          pending: 2,
-          total: 750
-        },
-        {
-          id: '2',
-          name: 'Sita Patel',
-          mobile: '9123456789',
-          apartment: 'Sri Krishna Complex',
-          tower: 'B',
-          flat: '202',
-          delivered: 25,
-          pending: 5,
-          total: 625
-        }
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  };
+    // Load mock customers data
+    setCustomers([
+      {
+        id: '1',
+        name: 'Ravi Kumar',
+        mobile: '9876543210',
+        apartment: 'Merlion Apartments',
+        tower: 'A',
+        flat: '101',
+        delivered: 28,
+        pending: 2,
+        total: 750
+      },
+      {
+        id: '2',
+        name: 'Sita Patel',
+        mobile: '9123456789',
+        apartment: 'Sri Krishna Complex',
+        tower: 'B',
+        flat: '202',
+        delivered: 25,
+        pending: 5,
+        total: 625
+      }
+    ]);
+  }, []);
 
   const apartments = ['All', 'Merlion Apartments', 'Sri Krishna Complex', 'Praneeth Heights'];
   const towers = ['All', 'A', 'B', 'C', 'D'];
@@ -99,55 +80,30 @@ const AgentDetailsScreen: React.FC<Props> = ({ navigation }) => {
            (selectedFlat === 'All' || customer.flat === selectedFlat);
   });
 
-  const updateDeliveredCount = async (customerId: string, change: number) => {
-    try {
-      await apiService.updateDeliveryCount(customerId, selectedItem?.id || '', change);
-      
-      setCustomers(prev => 
-        prev.map(customer => {
-          if (customer.id === customerId) {
-            const newDelivered = Math.max(0, customer.delivered + change);
-            const newPending = Math.max(0, customer.pending - change);
-            Alert.alert('Success', `Delivery updated! Notification sent to ${customer.name}`);
-            return { ...customer, delivered: newDelivered, pending: newPending };
-          }
-          return customer;
-        })
-      );
-    } catch (error) {
-      console.error('Error updating delivery count:', error);
-      Alert.alert('Error', 'Failed to update delivery count');
-    }
+  const updateDeliveredCount = (customerId: string, change: number) => {
+    setCustomers(prev => 
+      prev.map(customer => {
+        if (customer.id === customerId) {
+          const newDelivered = Math.max(0, customer.delivered + change);
+          const newPending = Math.max(0, customer.pending - change);
+          Alert.alert('Success', `Delivery updated! Notification sent to ${customer.name}`);
+          return { ...customer, delivered: newDelivered, pending: newPending };
+        }
+        return customer;
+      })
+    );
   };
 
-  const handleAgentHistory = async () => {
-    try {
-      await apiService.getAgentHistory();
-      navigation.navigate('AgentHistory');
-    } catch (error) {
-      console.error('Error fetching agent history:', error);
-      navigation.navigate('AgentHistory');
-    }
+  const handleAgentHistory = () => {
+    navigation.navigate('AgentHistory');
   };
 
-  const handleAgentDashboard = async () => {
-    try {
-      await apiService.getAgentDashboard();
-      navigation.navigate('AgentDashboard');
-    } catch (error) {
-      console.error('Error fetching dashboard:', error);
-      navigation.navigate('AgentDashboard');
-    }
+  const handleAgentDashboard = () => {
+    navigation.navigate('AgentDashboard');
   };
 
-  const handlePendingPayments = async () => {
-    try {
-      await apiService.getPendingPayments();
-      navigation.navigate('PendingPayments');
-    } catch (error) {
-      console.error('Error fetching payments:', error);
-      navigation.navigate('PendingPayments');
-    }
+  const handlePendingPayments = () => {
+    navigation.navigate('PendingPayments');
   };
 
   const renderCustomer = ({ item }: { item: Customer }) => (

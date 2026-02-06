@@ -12,9 +12,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { DrawerParamList } from '../../App';
-import { useSession } from '../context/SessionContext';
+import { useSession } from '../context/MockSessionContext';
 import { mockData } from '../data/mockData';
-import ApiService from '../services/SimpleApiService';
 
 type LoginScreenNavigationProp = DrawerNavigationProp<DrawerParamList, 'Login'>;
 
@@ -23,15 +22,14 @@ interface Props {
 }
 
 const LoginScreen: React.FC<Props> = ({ navigation }) => {
-  const [mobile, setMobile] = useState(__DEV__ ? '9876543210' : '');
-  const [password, setPassword] = useState(__DEV__ ? 'password' : '');
-  const [loginType, setLoginType] = useState<1 | 2>(1);
-  const [errors, setErrors] = useState<{ mobile?: string; password?: string }>({});
-  const { setUserMobile, setUserType, setUser, setToken } = useSession();
+  const [mobile, setMobile] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginType, setLoginType] = useState<'customer' | 'agent'>('customer');
+  const [errors, setErrors] = useState<{mobile?: string; password?: string}>({});
+  const { setUserMobile, setUserType, setUser } = useSession();
 
   const handleLogin = () => {
-    debugger;
-    const newErrors: { mobile?: string; password?: string } = {};
+    const newErrors: {mobile?: string; password?: string} = {};
 
     if (!mobile) newErrors.mobile = 'Mobile number is required';
     if (!password) newErrors.password = 'Password is required';
@@ -41,55 +39,20 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
       setErrors(newErrors);
       return;
     }
-    //const apiService = new ApiService();
-    ApiService.login({
-      mobile,
-      password,
-      userType: 1,
-    })
-      .then((response: any) => {
-        debugger;
-        console.log('Login response:', response);
-        if (response?.result) {
-          if (response && password === 'password') {
-            setUser(response?.result?.user);
-            setToken(response?.result?.token);
-            setUserMobile(mobile);
-            setUserType(loginType);
-            navigation.navigate('Home');
-          } else {
-            Alert.alert('Error', 'Invalid credentials. Use demo credentials.');
-          }
-
-
-        } else {
-          Alert.alert('Login Failed', response?.message || 'Invalid credentials');
-        }
-      })
-      .catch((error: any) => {
-        console.error('Login error:', error);
-
-        const message =
-          error?.response?.data?.message ||
-          error?.message ||
-          'Server error. Please try again later.';
-
-        Alert.alert('Login Failed', message);
-      });
 
     // Mock authentication
-    // const mockUser = mockData.users.find(user =>
-    //   user.mobile === mobile && user.type === loginType
-    // );
+    const mockUser = mockData.users.find(user => 
+      user.mobile === mobile && user.type === loginType
+    );
 
-    // if (mockUser && password === 'password') {
-    //   setUser(mockUser);
-    //   setUserMobile(mobile);
-    //   setUserType(loginType);
-    //   navigation.navigate('Home');
-    // } else {
-    //   Alert.alert('Error', 'Invalid credentials. Use demo credentials.');
-    // }
+    if (mockUser && password === 'password') {
+      setUser(mockUser);
+      setUserMobile(mobile);
+      setUserType(loginType);
+      navigation.navigate('Home');
+    } else {
+      Alert.alert('Error', 'Invalid credentials. Use demo credentials.');
+    }
   };
 
   return (
@@ -109,18 +72,18 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
 
             <View style={styles.userTypeContainer}>
               <TouchableOpacity
-                style={[styles.userTypeButton, loginType === 1 && styles.userTypeActive]}
-                onPress={() => setLoginType(1)}
+                style={[styles.userTypeButton, loginType === 'customer' && styles.userTypeActive]}
+                onPress={() => setLoginType('customer')}
               >
-                <Text style={[styles.userTypeText, loginType === 1 && styles.userTypeTextActive]}>
+                <Text style={[styles.userTypeText, loginType === 'customer' && styles.userTypeTextActive]}>
                   👤 Customer
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.userTypeButton, loginType === 2 && styles.userTypeActive]}
-                onPress={() => setLoginType(2)}
+                style={[styles.userTypeButton, loginType === 'agent' && styles.userTypeActive]}
+                onPress={() => setLoginType('agent')}
               >
-                <Text style={[styles.userTypeText, loginType === 2&& styles.userTypeTextActive]}>
+                <Text style={[styles.userTypeText, loginType === 'agent' && styles.userTypeTextActive]}>
                   🚚 Agent
                 </Text>
               </TouchableOpacity>
@@ -133,7 +96,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
               value={mobile}
               onChangeText={(text) => {
                 setMobile(text);
-                if (errors.mobile) setErrors(prev => ({ ...prev, mobile: undefined }));
+                if (errors.mobile) setErrors(prev => ({...prev, mobile: undefined}));
               }}
               keyboardType="phone-pad"
               maxLength={10}
@@ -147,7 +110,7 @@ const LoginScreen: React.FC<Props> = ({ navigation }) => {
               value={password}
               onChangeText={(text) => {
                 setPassword(text);
-                if (errors.password) setErrors(prev => ({ ...prev, password: undefined }));
+                if (errors.password) setErrors(prev => ({...prev, password: undefined}));
               }}
               secureTextEntry
             />

@@ -1,26 +1,30 @@
 import { useState, useEffect } from 'react';
-import { Item, Suggestion } from '../models';
-import ItemRepository from '../repositories/ItemRepository';
+import { Item, Suggestion, ResponseData, emptyResponse } from '../models';
+import SimpleApiService from '../services/SimpleApiService';
 
 export const useHomeViewModel = () => {
-  const [items, setItems] = useState<Item[]>([]);
-  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [items, setItems] = useState<ResponseData>({} as ResponseData);
+  const [suggestions, setSuggestions] = useState<ResponseData>({} as ResponseData);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadData = async () => {
+    debugger;
     setLoading(true);
     setError(null);
     try {
-      const [itemsData, suggestionsData] = await Promise.all([
-        ItemRepository.getItems(),
-        ItemRepository.getSuggestions()
-      ]);
-      setItems(itemsData);
-      setSuggestions(suggestionsData);
+      const itemsData = await SimpleApiService.getItems();
+      const suggestionsData = await SimpleApiService.getSuggestions();
+
+      setItems(itemsData || []);
+      debugger;
+      setSuggestions(suggestionsData || []);
     } catch (err) {
-      setError('Failed to load data');
+      debugger;
       console.error('Error loading data:', err);
+      setError('Failed to load data');
+      setItems(emptyResponse);
+      setSuggestions(emptyResponse);
     } finally {
       setLoading(false);
     }

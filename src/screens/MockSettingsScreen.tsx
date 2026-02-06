@@ -8,14 +8,12 @@ import {
   ScrollView,
   ImageBackground,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { DrawerParamList } from '../../App';
-import { useSession } from '../context/SessionContext';
-import apiService from '../services/ApiService';
+import { useSession } from '../context/MockSessionContext';
 
 type SettingsScreenNavigationProp = DrawerNavigationProp<DrawerParamList, 'Settings'>;
 
@@ -26,9 +24,7 @@ interface Props {
 const SettingsScreen: React.FC<Props> = ({ navigation }) => {
   const { userType, userMobile } = useSession();
   const [activeTab, setActiveTab] = useState<'item' | 'customer' | 'profile' | 'app'>('item');
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Item form state
   const [itemForm, setItemForm] = useState({
     name: '',
     brand: '',
@@ -36,7 +32,6 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
     deliveryCharge: '',
   });
 
-  // Customer form state
   const [customerForm, setCustomerForm] = useState({
     name: '',
     apartment: '',
@@ -47,75 +42,34 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
     itemCount: '',
   });
 
-  const handleAddItem = async () => {
+  const handleAddItem = () => {
     if (!itemForm.name || !itemForm.brand || !itemForm.price) {
       Alert.alert('Error', 'Please fill all required fields');
       return;
     }
-    
-    setIsSubmitting(true);
-    try {
-      await apiService.post('/items', {
-        name: itemForm.name,
-        brand: itemForm.brand,
-        price: parseFloat(itemForm.price),
-        deliveryCharge: parseFloat(itemForm.deliveryCharge) || 0,
-      });
-      
-      Alert.alert('Success', 'Item added successfully!');
-      setItemForm({ name: '', brand: '', price: '', deliveryCharge: '' });
-    } catch (error) {
-      console.error('Error adding item:', error);
-      Alert.alert('Error', 'Failed to add item. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    Alert.alert('Success', 'Item added successfully!');
+    setItemForm({ name: '', brand: '', price: '', deliveryCharge: '' });
   };
 
-  const handleAddCustomer = async () => {
+  const handleAddCustomer = () => {
     if (!customerForm.name || !customerForm.mobile || !customerForm.apartment) {
       Alert.alert('Error', 'Please fill all required fields');
       return;
     }
-    
-    setIsSubmitting(true);
-    try {
-      await apiService.post('/customers', {
-        name: customerForm.name,
-        apartment: customerForm.apartment,
-        tower: customerForm.tower,
-        flat: customerForm.flat,
-        mobile: customerForm.mobile,
-        alternateMobile: customerForm.alternateMobile,
-        itemCount: parseInt(customerForm.itemCount) || 0,
-      });
-      
-      Alert.alert('Success', 'Customer added successfully!');
-      setCustomerForm({
-        name: '',
-        apartment: '',
-        tower: '',
-        flat: '',
-        mobile: '',
-        alternateMobile: '',
-        itemCount: '',
-      });
-    } catch (error) {
-      console.error('Error adding customer:', error);
-      Alert.alert('Error', 'Failed to add customer. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    Alert.alert('Success', 'Customer added successfully!');
+    setCustomerForm({
+      name: '',
+      apartment: '',
+      tower: '',
+      flat: '',
+      mobile: '',
+      alternateMobile: '',
+      itemCount: '',
+    });
   };
 
-  const handleUpdateSettings = async (setting: string, value: any) => {
-    try {
-      await apiService.updateSettings({ [setting]: value });
-      Alert.alert('Success', 'Settings updated successfully!');
-    } catch (error) {
-      console.error('Error updating settings:', error);
-      Alert.alert('Error', 'Failed to update settings.');
-    }
+  const handleUpdateSettings = (setting: string) => {
+    Alert.alert('Success', `${setting} updated successfully!`);
   };
 
   if (userType !== 'agent') {
@@ -237,17 +191,9 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
                   keyboardType="numeric"
                 />
                 
-                <TouchableOpacity 
-                  style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]} 
-                  onPress={handleAddItem}
-                  disabled={isSubmitting}
-                >
+                <TouchableOpacity style={styles.submitButton} onPress={handleAddItem}>
                   <LinearGradient colors={['#667eea', '#764ba2']} style={styles.submitGradient}>
-                    {isSubmitting ? (
-                      <ActivityIndicator color="white" size="small" />
-                    ) : (
-                      <Text style={styles.submitText}>Add Item</Text>
-                    )}
+                    <Text style={styles.submitText}>Add Item</Text>
                   </LinearGradient>
                 </TouchableOpacity>
               </BlurView>
@@ -318,17 +264,9 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
                   keyboardType="numeric"
                 />
                 
-                <TouchableOpacity 
-                  style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]} 
-                  onPress={handleAddCustomer}
-                  disabled={isSubmitting}
-                >
+                <TouchableOpacity style={styles.submitButton} onPress={handleAddCustomer}>
                   <LinearGradient colors={['#3498DB', '#2980B9']} style={styles.submitGradient}>
-                    {isSubmitting ? (
-                      <ActivityIndicator color="white" size="small" />
-                    ) : (
-                      <Text style={styles.submitText}>Add Customer</Text>
-                    )}
+                    <Text style={styles.submitText}>Add Customer</Text>
                   </LinearGradient>
                 </TouchableOpacity>
               </BlurView>
@@ -361,7 +299,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
                 
                 <TouchableOpacity 
                   style={styles.settingItem}
-                  onPress={() => handleUpdateSettings('notifications', true)}
+                  onPress={() => handleUpdateSettings('Notifications')}
                 >
                   <Text style={styles.settingText}>🔔 Notifications</Text>
                   <Text style={styles.settingValue}>Enabled</Text>
@@ -369,7 +307,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
                 
                 <TouchableOpacity 
                   style={styles.settingItem}
-                  onPress={() => handleUpdateSettings('theme', 'dark')}
+                  onPress={() => handleUpdateSettings('Theme')}
                 >
                   <Text style={styles.settingText}>🎨 Theme</Text>
                   <Text style={styles.settingValue}>Default</Text>
@@ -377,7 +315,7 @@ const SettingsScreen: React.FC<Props> = ({ navigation }) => {
                 
                 <TouchableOpacity 
                   style={styles.settingItem}
-                  onPress={() => handleUpdateSettings('language', 'en')}
+                  onPress={() => handleUpdateSettings('Language')}
                 >
                   <Text style={styles.settingText}>🌐 Language</Text>
                   <Text style={styles.settingValue}>English</Text>
@@ -514,9 +452,6 @@ const styles = StyleSheet.create({
     marginTop: 10,
     borderRadius: 12,
     overflow: 'hidden',
-  },
-  submitButtonDisabled: {
-    opacity: 0.7,
   },
   submitGradient: {
     paddingVertical: 16,

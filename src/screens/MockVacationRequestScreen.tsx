@@ -7,14 +7,12 @@ import {
   ScrollView,
   ImageBackground,
   Alert,
-  ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { BlurView } from 'expo-blur';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { DrawerParamList } from '../../App';
-import { useSession } from '../context/SessionContext';
-import apiService from '../services/ApiService';
+import { useSession } from '../context/MockSessionContext';
 
 type VacationRequestScreenNavigationProp = DrawerNavigationProp<DrawerParamList, 'VacationRequest'>;
 
@@ -26,7 +24,6 @@ const VacationRequestScreen: React.FC<Props> = ({ navigation }) => {
   const { selectedItem, userMobile } = useSession();
   const [fromDate, setFromDate] = useState<number | null>(null);
   const [toDate, setToDate] = useState<number | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const currentDate = new Date().getDate();
   const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
   const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
@@ -34,14 +31,13 @@ const VacationRequestScreen: React.FC<Props> = ({ navigation }) => {
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
   const handleDateSelect = (day: number) => {
-    if (day < currentDate) return; // Disable past dates
+    if (day < currentDate) return;
 
     if (!fromDate) {
       setFromDate(day);
     } else if (!toDate && day > fromDate) {
       setToDate(day);
     } else {
-      // Reset selection
       setFromDate(day);
       setToDate(null);
     }
@@ -57,41 +53,22 @@ const VacationRequestScreen: React.FC<Props> = ({ navigation }) => {
     return day < currentDate;
   };
 
-  const handleSubmitRequest = async () => {
+  const handleSubmitRequest = () => {
     if (!fromDate || !toDate) {
       Alert.alert('Error', 'Please select both from and to dates');
       return;
     }
 
-    setIsSubmitting(true);
-    try {
-      const requestData = {
-        itemId: selectedItem?.id,
-        customerMobile: userMobile,
-        fromDate,
-        toDate,
-        month: currentMonth,
-        totalDays: toDate - fromDate + 1,
-      };
-
-      await apiService.submitVacationRequest(requestData);
-      
-      Alert.alert(
-        'Vacation Request Sent',
-        `Your vacation request has been sent to the agent.\n\nDates: ${fromDate} to ${toDate} ${currentMonth}\nItem: ${selectedItem?.name}\n\nNotification sent via WhatsApp and Email.`,
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.navigate('CustomerDetails')
-          }
-        ]
-      );
-    } catch (error) {
-      console.error('Error submitting vacation request:', error);
-      Alert.alert('Error', 'Failed to submit vacation request. Please try again.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    Alert.alert(
+      'Vacation Request Sent',
+      `Your vacation request has been sent to the agent.\n\nDates: ${fromDate} to ${toDate} ${currentMonth}\nItem: ${selectedItem?.name}\n\nNotification sent via WhatsApp and Email.`,
+      [
+        {
+          text: 'OK',
+          onPress: () => navigation.navigate('CustomerDetails')
+        }
+      ]
+    );
   };
 
   const renderDay = (day: number) => {
@@ -180,17 +157,9 @@ const VacationRequestScreen: React.FC<Props> = ({ navigation }) => {
 
           {fromDate && toDate && (
             <BlurView intensity={15} style={styles.submitCard}>
-              <TouchableOpacity 
-                style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]} 
-                onPress={handleSubmitRequest}
-                disabled={isSubmitting}
-              >
+              <TouchableOpacity style={styles.submitButton} onPress={handleSubmitRequest}>
                 <LinearGradient colors={['#E74C3C', '#C0392B']} style={styles.submitGradient}>
-                  {isSubmitting ? (
-                    <ActivityIndicator color="white" size="small" />
-                  ) : (
-                    <Text style={styles.submitText}>🏖️ Submit Vacation Request</Text>
-                  )}
+                  <Text style={styles.submitText}>🏖️ Submit Vacation Request</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </BlurView>
@@ -377,9 +346,6 @@ const styles = StyleSheet.create({
   submitButton: {
     borderRadius: 12,
     overflow: 'hidden',
-  },
-  submitButtonDisabled: {
-    opacity: 0.7,
   },
   submitGradient: {
     paddingVertical: 16,

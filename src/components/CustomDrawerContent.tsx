@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useSession } from '../context/SessionContext';
 
 export const CustomDrawerContent = (props: any) => {
-  const { userType, setUserType, setUserMobile, setSelectedItem } = useSession();
+  const { userType, setUserType, setUserMobile, setSelectedItem, logout } = useSession();
 
   const handleLogout = () => {
     Alert.alert(
@@ -18,9 +18,7 @@ export const CustomDrawerContent = (props: any) => {
         {
           text: 'Logout',
           onPress: () => {
-            setUserType('customer');
-            setUserMobile('');
-            setSelectedItem(null);
+            logout();
             props.navigation.dispatch(
               CommonActions.reset({
                 index: 0,

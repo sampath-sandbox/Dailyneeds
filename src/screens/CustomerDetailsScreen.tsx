@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,9 @@ import { BlurView } from 'expo-blur';
 import { DrawerNavigationProp } from '@react-navigation/drawer';
 import { DrawerParamList } from '../../App';
 import { useSession } from '../context/SessionContext';
+import { mockData } from '../data/mockData';
+import { Item, Suggestion, ResponseData, emptyResponse } from '../models';
+import SimpleApiService from '../services/SimpleApiService';
 
 type CustomerDetailsNavigationProp = DrawerNavigationProp<DrawerParamList, 'CustomerDetails'>;
 
@@ -21,27 +24,75 @@ interface Props {
 
 const CustomerDetailsScreen: React.FC<Props> = ({ navigation }) => {
   const { selectedItem, userMobile } = useSession();
+  //const [customerData, setCustomerData] = useState<any>(null);
+    const [customerData, setCustomerData] = useState<ResponseData>({} as ResponseData);
   
-  useEffect(() => {
-    if (!selectedItem) {
-      navigation.navigate('Home');
-    }
-  }, [selectedItem, navigation]);
+//const [customerData, setCustomerData] = useState<CustomerDetails | null>(null);
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState<string | null>(null);
+
+     useEffect(() => {
+       if (selectedItem) {
+         loadCustomerdetails();
+       }
+     }, [selectedItem]);
+   
+     const loadCustomerdetails = async () => {
+       if (!selectedItem) return;
+       debugger;
+       setLoading(true);
+       try {
+         const data = await SimpleApiService.getCustomerDetails(selectedItem.id);
+         //setCustomers(data);
+ setCustomerData({
+      agentName: data?.result?.agentName || 'Rajesh Kumar',
+      agentMobile: data?.result?.agentMobile || '9123456789',
+      delivered: data?.result?.delivered || 28,
+      pending: data?.result?.pending || 2,
+      totalAmount: (selectedItem?.price + 5) * (data?.result?.delivered || 28)
+    });
+
+       } catch (error) {
+         console.error('Error loading customers:', error);
+        //  // Fallback to mock data
+       
+       } finally {
+         setLoading(false);
+       }
+     };
+
+debugger;
+    // Load mock customer data
+    // setCustomerData({
+    //   agentName: 'Rajesh Kumar',
+    //   agentMobile: '9123456789',
+    //   delivered: 28,
+    //   pending: 2,
+    //   totalAmount: (selectedItem?.price? + 5) * 28
+    // });
+  
+  
+  const handleHistoryClick = () => {
+    navigation.navigate('History');
+  };
+  
+  const handleVacationRequest = () => {
+    navigation.navigate('VacationRequest');
+  };
+  
+  const handleUpdateRequest = () => {
+    navigation.navigate('UpdateRequest');
+  };
   
   if (!selectedItem) {
     return null;
   }
-
-  const agentDetails = {
-    name: 'Rajesh Kumar',
-    mobile: '9123456789',
-  };
-
+debugger;
   const currentMonth = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
   const deliveryCharge = 5;
-  const delivered = 28;
-  const pending = 2;
-  const totalPrice = (selectedItem.price + deliveryCharge) * delivered;
+  const delivered = customerData?.result?.delivered || 28;
+  const pending = customerData?.result?.pending || 2;
+  const totalPrice = customerData?.result?.totalAmount || (selectedItem.price + deliveryCharge) * delivered;
 
   return (
     <ImageBackground
@@ -65,7 +116,7 @@ const CustomerDetailsScreen: React.FC<Props> = ({ navigation }) => {
 
           <BlurView intensity={15} style={styles.itemCard}>
             <View style={styles.itemHeader}>
-              <Text style={styles.itemIcon}>{selectedItem.icon}</Text>
+              <Text style={styles.itemIcon}>{selectedItem.imageUrl}</Text>
               <View style={styles.itemInfo}>
                 <Text style={styles.itemName}>{selectedItem.name}</Text>
                 <Text style={styles.itemBrand}>{selectedItem.brand}</Text>
@@ -78,12 +129,12 @@ const CustomerDetailsScreen: React.FC<Props> = ({ navigation }) => {
             
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Agent Name:</Text>
-              <Text style={styles.detailValue}>{agentDetails.name}</Text>
+              <Text style={styles.detailValue}>{customerData?.agentName || 'Loading...'}</Text>
             </View>
             
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Agent Mobile:</Text>
-              <Text style={styles.detailValue}>{agentDetails.mobile}</Text>
+              <Text style={styles.detailValue}>{customerData?.agentMobile || 'Loading...'}</Text>
             </View>
             
             <View style={styles.detailRow}>
@@ -117,7 +168,7 @@ const CustomerDetailsScreen: React.FC<Props> = ({ navigation }) => {
             
             <TouchableOpacity 
               style={styles.actionButton} 
-              onPress={() => navigation.navigate('History')}
+              onPress={handleHistoryClick}
             >
               <LinearGradient colors={['#3498DB', '#2980B9']} style={styles.actionGradient}>
                 <Text style={styles.actionText}>📊 History</Text>
@@ -126,7 +177,7 @@ const CustomerDetailsScreen: React.FC<Props> = ({ navigation }) => {
             
             <TouchableOpacity 
               style={styles.actionButton}
-              onPress={() => navigation.navigate('VacationRequest')}
+              onPress={handleVacationRequest}
             >
               <LinearGradient colors={['#E74C3C', '#C0392B']} style={styles.actionGradient}>
                 <Text style={styles.actionText}>🏖️ Vacation Request</Text>
@@ -135,7 +186,7 @@ const CustomerDetailsScreen: React.FC<Props> = ({ navigation }) => {
             
             <TouchableOpacity 
               style={styles.actionButton}
-              onPress={() => navigation.navigate('UpdateRequest')}
+              onPress={handleUpdateRequest}
             >
               <LinearGradient colors={['#F39C12', '#E67E22']} style={styles.actionGradient}>
                 <Text style={styles.actionText}>📝 Update Request</Text>
@@ -149,6 +200,12 @@ const CustomerDetailsScreen: React.FC<Props> = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#667eea',
+  },
   background: { flex: 1 },
   overlay: { flex: 1 },
   container: { flex: 1, padding: 16 },
